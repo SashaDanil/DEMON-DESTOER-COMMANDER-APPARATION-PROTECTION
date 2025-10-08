@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор паролей</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Генератор паролей</h1>
+        
+        <div class="settings">
+            <div class="setting-group">
+                <label for="length">
+                    📏 Длина пароля:
+                    <input type="number" id="length" min="4" max="50" value="12">
+                </label>
+            </div>
+            
+            <div class="setting-group">
+                <label>
+                    <input type="checkbox" id="uppercase" checked>
+                    🔠 Заглавные буквы (A-Z)
+                </label>
+            </div>
+            
+            <div class="setting-group">
+                <label>
+                    <input type="checkbox" id="numbers" checked>
+                    🔢 Цифры (0-9)
+                </label>
+            </div>
+            
+            <div class="setting-group">
+                <label>
+                    <input type="checkbox" id="special" checked>
+                    ⚡ Специальные символы
+                </label>
+            </div>
+        </div>
+        
+        <!-- Сначала поле с паролем -->
+        <div class="result">
+            <label for="password">🔑 Ваш пароль:</label>
+            <input type="text" id="password" readonly>
+        </div>
+        
+        <!-- Затем кнопка генерации -->
+        <button id="generate-btn">🎲 Сгенерировать пароль</button>
+        
+        <div class="message" id="message"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const generateBtn = document.getElementById('generate-btn');
+            const passwordInput = document.getElementById('password');
+            const messageDiv = document.getElementById('message');
+
+            generateBtn.addEventListener('click', generatePassword);
+
+            function generatePassword() {
+                const length = parseInt(document.getElementById('length').value);
+                const uppercase = document.getElementById('uppercase').checked;
+                const numbers = document.getElementById('numbers').checked;
+                const special = document.getElementById('special').checked;
+
+                // Показываем загрузку
+                generateBtn.textContent = '🔥 Генерация...';
+                generateBtn.disabled = true;
+
+                fetch('/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        length: length,
+                        uppercase: uppercase,
+                        numbers: numbers,
+                        special: special
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        passwordInput.value = data.password;
+                        showMessage('✅ Пароль сгенерирован успешно!', 'success');
+                    } else {
+                        showMessage('❌ Ошибка: ' + data.error, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showMessage('❌ Ошибка соединения с сервером', 'error');
+                })
+                .finally(() => {
+                    generateBtn.textContent = '🎲 Сгенерировать пароль';
+                    generateBtn.disabled = false;
+                });
+            }
+
+            function showMessage(text, type) {
+                messageDiv.textContent = text;
+                messageDiv.className = 'message ' + type;
+                
+                // Автоматически скрываем сообщение через 3 секунды
+                setTimeout(() => {
+                    messageDiv.textContent = '';
+                    messageDiv.className = 'message';
+                }, 3000);
+            }
+
+            // Генерируем пароль при загрузке страницы
+            generatePassword();
+        });
+    </script>
+</body>
+</html>
