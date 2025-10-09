@@ -8,12 +8,12 @@
 </head>
 <body>
     <div class="container">
-        <h1>🔐 Генератор паролей</h1>
+        <h1>Генератор паролей</h1>
         
         <div class="settings">
             <div class="setting-group">
                 <label for="length">
-                    📏 Длина пароля:
+                    Длина пароля:
                     <input type="number" id="length" min="4" max="50" value="12">
                 </label>
             </div>
@@ -21,33 +21,33 @@
             <div class="setting-group">
                 <label>
                     <input type="checkbox" id="uppercase" checked>
-                    🔠 Заглавные буквы (A-Z)
+                    Заглавные буквы (A-Z)
                 </label>
             </div>
             
             <div class="setting-group">
                 <label>
                     <input type="checkbox" id="numbers" checked>
-                    🔢 Цифры (0-9)
+                    Цифры (0-9)
                 </label>
             </div>
             
             <div class="setting-group">
                 <label>
                     <input type="checkbox" id="special" checked>
-                    ⚡ Специальные символы
+                    Специальные символы
                 </label>
             </div>
         </div>
         
         <!-- Сначала поле с паролем -->
         <div class="result">
-            <label for="password">🔑 Ваш пароль:</label>
+            <label for="password">Ваш пароль:</label>
             <input type="text" id="password" readonly>
         </div>
         
         <!-- Затем кнопка генерации -->
-        <button id="generate-btn">🎲 Сгенерировать пароль</button>
+        <button id="generate-btn">Сгенерировать пароль</button>
         
         <div class="message" id="message"></div>
     </div>
@@ -67,7 +67,7 @@
                 const special = document.getElementById('special').checked;
 
                 // Показываем загрузку
-                generateBtn.textContent = '🔥 Генерация...';
+                generateBtn.textContent = 'Генерация...';
                 generateBtn.disabled = true;
 
                 fetch('/generate', {
@@ -86,17 +86,17 @@
                 .then(data => {
                     if (data.success) {
                         passwordInput.value = data.password;
-                        showMessage('✅ Пароль сгенерирован успешно!', 'success');
+                        showMessage('Пароль сгенерирован успешно!', 'success');
                     } else {
-                        showMessage('❌ Ошибка: ' + data.error, 'error');
+                        showMessage('Ошибка: ' + data.error, 'error');
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    showMessage('❌ Ошибка соединения с сервером', 'error');
+                    showMessage('Ошибка соединения с сервером', 'error');
                 })
                 .finally(() => {
-                    generateBtn.textContent = '🎲 Сгенерировать пароль';
+                    generateBtn.textContent = 'Сгенерировать пароль';
                     generateBtn.disabled = false;
                 });
             }
@@ -104,7 +104,7 @@
             function showMessage(text, type) {
                 messageDiv.textContent = text;
                 messageDiv.className = 'message ' + type;
-                
+
                 // Автоматически скрываем сообщение через 3 секунды
                 setTimeout(() => {
                     messageDiv.textContent = '';
