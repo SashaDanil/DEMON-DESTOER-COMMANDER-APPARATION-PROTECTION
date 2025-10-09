@@ -5,7 +5,6 @@ import string
 app = Flask(__name__)
 
 def generate_password(length=12, use_uppercase=True, use_numbers=True, use_special=True):
-    """Генерация пароля с заданными параметрами"""
     characters = string.ascii_lowercase
     
     if use_uppercase:
@@ -33,10 +32,9 @@ def generate():
         use_uppercase = data.get('uppercase', True)
         use_numbers = data.get('numbers', True)
         use_special = data.get('special', True)
-        
-        # Проверка минимальной длины
-        if length < 4:
-            length = 4
+
+        if length < 1:
+            length = 1
         elif length > 50:
             length = 50
             
