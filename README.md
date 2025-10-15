@@ -6,6 +6,7 @@
 1) Генерация случайных паролей
 2) Настройка длины пароля(от 1 до 50 символов)
 3) Включение/исключение различных типов символов
+4) Регистрация на сайте
 
 Установка и запуск.
 Предварительные требования
@@ -34,4 +35,7 @@ python app.ry
 
 Веб-приложение
 -
-<img width="537" height="719" alt="image" src="https://github.com/user-attachments/assets/1ba0e069-9b94-47b0-91e9-6cac402104d8" />
+<img width="405" height="639" alt="image" src="https://github.com/user-attachments/assets/27d49d63-aa62-4819-8ffe-c76acea72ce4" />
+<img width="387" height="453" alt="image" src="https://github.com/user-attachments/assets/855c3e58-c137-4fd7-89b1-be993a2bb826" />
+
+
