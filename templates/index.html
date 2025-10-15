@@ -8,45 +8,45 @@
 </head>
 <body>
     <div class="container">
+        {% if 'username' in session %}
+        <div class="header-bar">
+            <h1>Генератор паролей</h1>
+            <div class="user-info">
+                <span>{{ username }}</span>
+                <a href="{{ url_for('logout') }}" class="logout-btn">Выйти</a>
+            </div>
+        </div>
+        {% else %}
         <h1>Генератор паролей</h1>
+        {% endif %}
         
         <div class="settings">
-            <div class="setting-group">
-                <label for="length">
-                    Длина пароля:
-                    <input type="number" id="length" min="4" max="50" value="12">
-                </label>
+            <div class="setting-group length-input">
+                <label for="length">Длина пароля:</label>
+                <input type="number" id="length" min="4" max="50" value="12">
             </div>
             
-            <div class="setting-group">
-                <label>
-                    <input type="checkbox" id="uppercase" checked>
-                    Заглавные буквы (A-Z)
-                </label>
+            <div class="setting-group checkbox-group">
+                <input type="checkbox" id="uppercase" checked>
+                <label for="uppercase">Заглавные буквы (A-Z)</label>
             </div>
             
-            <div class="setting-group">
-                <label>
-                    <input type="checkbox" id="numbers" checked>
-                    Цифры (0-9)
-                </label>
+            <div class="setting-group checkbox-group">
+                <input type="checkbox" id="numbers" checked>
+                <label for="numbers">Цифры (0-9)</label>
             </div>
             
-            <div class="setting-group">
-                <label>
-                    <input type="checkbox" id="special" checked>
-                    Специальные символы
-                </label>
+            <div class="setting-group checkbox-group">
+                <input type="checkbox" id="special" checked>
+                <label for="special">Специальные символы</label>
             </div>
         </div>
         
-        <!-- Сначала поле с паролем -->
         <div class="result">
             <label for="password">Ваш пароль:</label>
             <input type="text" id="password" readonly>
         </div>
         
-        <!-- Затем кнопка генерации -->
         <button id="generate-btn">Сгенерировать пароль</button>
         
         <div class="message" id="message"></div>
