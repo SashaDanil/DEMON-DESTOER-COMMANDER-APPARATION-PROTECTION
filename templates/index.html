@@ -1,120 +1,142 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Генератор паролей</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .users-section {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        .user-item {
+            margin: 8px 0;
+            padding: 10px;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+        .user-login {
+            font-weight: bold;
+            color: #333;
+        }
+        .user-password {
+            color: #666;
+            font-family: monospace;
+        }
+        .file-content {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            margin-top: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #45a049;
+        }
+        .button-secondary {
+            background: #008CBA;
+        }
+        .button-secondary:hover {
+            background: #007B9A;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        {% if 'username' in session %}
-        <div class="header-bar">
-            <h1>Генератор паролей</h1>
-            <div class="user-info">
-                <span>{{ username }}</span>
-                <a href="{{ url_for('logout') }}" class="logout-btn">Выйти</a>
-            </div>
-        </div>
+    <h1>Добро пожаловать, {{ username }}!</h1>
+    <p><a href="{{ url_for('logout') }}">Выйти</a></p>
+    
+    <h2>Генератор паролей</h2>
+    <div>
+        <label>Длина пароля: <input type="number" id="length" value="12" min="1" max="50"></label><br>
+        <label><input type="checkbox" id="uppercase" checked> Заглавные буквы</label><br>
+        <label><input type="checkbox" id="numbers" checked> Цифры</label><br>
+        <label><input type="checkbox" id="special" checked> Специальные символы</label><br>
+        <button class="button" onclick="generatePassword()">Сгенерировать пароль</button>
+    </div>
+    <div id="result" style="margin: 10px 0; padding: 10px; background: #e0e0e0;"></div>
+
+    <div class="users-section">
+        
+        
+        {% if all_users %}
+            <p>Найдено пользователей: {{ all_users|length }}</p>
+            {% for user, password in all_users.items() %}
+                <div class="user-item">
+                    <span class="user-login">Логин: {{ user }}</span> | 
+                    <span class="user-password">Пароль: {{ password }}</span>
+                </div>
+            {% endfor %}
         {% else %}
-        <h1>Генератор паролей</h1>
+            <p style="color: red;">Пользователей не найдено или файл пуст</p>
         {% endif %}
-        
-        <div class="settings">
-            <div class="setting-group length-input">
-                <label for="length">Длина пароля:</label>
-                <input type="number" id="length" min="4" max="50" value="12">
-            </div>
-            
-            <div class="setting-group checkbox-group">
-                <input type="checkbox" id="uppercase" checked>
-                <label for="uppercase">Заглавные буквы (A-Z)</label>
-            </div>
-            
-            <div class="setting-group checkbox-group">
-                <input type="checkbox" id="numbers" checked>
-                <label for="numbers">Цифры (0-9)</label>
-            </div>
-            
-            <div class="setting-group checkbox-group">
-                <input type="checkbox" id="special" checked>
-                <label for="special">Специальные символы</label>
-            </div>
-        </div>
-        
-        <div class="result">
-            <label for="password">Ваш пароль:</label>
-            <input type="text" id="password" readonly>
-        </div>
-        
-        <button id="generate-btn">Сгенерировать пароль</button>
-        
-        <div class="message" id="message"></div>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const generateBtn = document.getElementById('generate-btn');
-            const passwordInput = document.getElementById('password');
-            const messageDiv = document.getElementById('message');
+        function generatePassword() {
+            const length = document.getElementById('length').value;
+            const uppercase = document.getElementById('uppercase').checked;
+            const numbers = document.getElementById('numbers').checked;
+            const special = document.getElementById('special').checked;
 
-            generateBtn.addEventListener('click', generatePassword);
-
-            function generatePassword() {
-                const length = parseInt(document.getElementById('length').value);
-                const uppercase = document.getElementById('uppercase').checked;
-                const numbers = document.getElementById('numbers').checked;
-                const special = document.getElementById('special').checked;
-
-                // Показываем загрузку
-                generateBtn.textContent = 'Генерация...';
-                generateBtn.disabled = true;
-
-                fetch('/generate', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        length: length,
-                        uppercase: uppercase,
-                        numbers: numbers,
-                        special: special
-                    })
+            fetch('/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    length: parseInt(length),
+                    uppercase: uppercase,
+                    numbers: numbers,
+                    special: special
                 })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const resultDiv = document.getElementById('result');
+                if (data.success) {
+                    resultDiv.innerHTML = 
+                        `<p><strong>Сгенерированный пароль:</strong> <span style="font-family: monospace; font-weight: bold;">${data.password}</span></p>`;
+                } else {
+                    resultDiv.innerHTML = 
+                        `<p style="color: red;">Ошибка: ${data.error}</p>`;
+                }
+            });
+        }
+
+        function viewFileContent() {
+            fetch('/view_file')
                 .then(response => response.json())
                 .then(data => {
+                    const fileContentDiv = document.getElementById('fileContent');
                     if (data.success) {
-                        passwordInput.value = data.password;
-                        showMessage('Пароль сгенерирован успешно!', 'success');
+                        fileContentDiv.textContent = data.content;
+                        fileContentDiv.style.display = 'block';
                     } else {
-                        showMessage('Ошибка: ' + data.error, 'error');
+                        fileContentDiv.textContent = 'Ошибка: ' + data.error;
+                        fileContentDiv.style.display = 'block';
                     }
                 })
                 .catch(error => {
-                    console.error('Error:', error);
-                    showMessage('Ошибка соединения с сервером', 'error');
-                })
-                .finally(() => {
-                    generateBtn.textContent = 'Сгенерировать пароль';
-                    generateBtn.disabled = false;
+                    const fileContentDiv = document.getElementById('fileContent');
+                    fileContentDiv.textContent = 'Ошибка при загрузке файла: ' + error;
+                    fileContentDiv.style.display = 'block';
                 });
-            }
-
-            function showMessage(text, type) {
-                messageDiv.textContent = text;
-                messageDiv.className = 'message ' + type;
-
-                // Автоматически скрываем сообщение через 3 секунды
-                setTimeout(() => {
-                    messageDiv.textContent = '';
-                    messageDiv.className = 'message';
-                }, 3000);
-            }
-
-            // Генерируем пароль при загрузке страницы
-            generatePassword();
-        });
+        }
     </script>
 </body>
 </html>
