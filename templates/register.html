@@ -1,43 +1,19 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Регистрация - Генератор паролей</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Регистрация</title>
 </head>
 <body>
-    <div class="container">
-        <h1>Регистрация</h1>
-        
-        {% if error %}
-        <div class="message error" style="margin-bottom: 20px;">
-            {{ error }}
-        </div>
-        {% endif %}
-        
-        <form method="POST" class="auth-form">
-            <div class="form-group">
-                <label for="username">Имя пользователя:</label>
-                <input type="text" id="username" name="username" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="password">Пароль:</label>
-                <input type="password" id="password" name="password" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="confirm_password">Подтвердите пароль:</label>
-                <input type="password" id="confirm_password" name="confirm_password" required>
-            </div>
-            
-            <button type="submit" class="auth-btn">Зарегистрироваться</button>
-        </form>
-        
-        <div class="auth-links">
-            <p>Уже есть аккаунт? <a href="{{ url_for('login') }}">Войдите</a></p>
-        </div>
-    </div>
+    <h1>Регистрация</h1>
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+    <form method="POST">
+        <input type="text" name="username" placeholder="Имя пользователя" required>
+        <input type="password" name="password" placeholder="Пароль" required>
+        <input type="password" name="confirm_password" placeholder="Подтвердите пароль" required>
+        <button type="submit">Зарегистрироваться</button>
+    </form>
+    <p><a href="{{ url_for('login') }}">Вход</a></p>
 </body>
 </html>
