@@ -1,94 +1,222 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Генератор паролей</title>
     <style>
-        .users-section {
-            margin-top: 20px;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            background: #f9f9f9;
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
         }
-        .user-item {
-            margin: 8px 0;
-            padding: 10px;
+        
+        .header {
             background: white;
-            border: 1px solid #ccc;
-            border-radius: 3px;
-        }
-        .user-login {
-            font-weight: bold;
-            color: #333;
-        }
-        .user-password {
-            color: #666;
-            font-family: monospace;
-        }
-        .file-content {
-            background: #2d2d2d;
-            color: #f8f8f2;
-            padding: 15px;
+            padding: 20px;
             border-radius: 5px;
-            font-family: monospace;
-            white-space: pre-wrap;
-            margin-top: 10px;
-            max-height: 400px;
-            overflow-y: auto;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        .button {
-            background: #4CAF50;
-            color: white;
-            padding: 10px 15px;
+        
+        .generator-card {
+            background: white;
+            padding: 30px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .password-display {
+            background: #f8f9fa;
+            padding: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-family: monospace;
+            font-size: 18px;
+            text-align: center;
+            word-break: break-all;
+        }
+        
+        .settings-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        
+        .length-input {
+            width: 80px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            text-align: center;
+        }
+        
+        .checkbox-group {
+            margin: 12px 0;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+        
+        .btn {
+            padding: 12px 20px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            margin: 5px;
+            flex: 1;
+            font-size: 16px;
         }
-        .button:hover {
-            background: #45a049;
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
         }
-        .button-secondary {
-            background: #008CBA;
+        
+        .btn-primary:hover {
+            background: #0056b3;
         }
-        .button-secondary:hover {
-            background: #007B9A;
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+        
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .logout-btn:hover {
+            background: #c82333;
+        }
+        
+        .database-section {
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .data-content {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+            margin-top: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .data-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .data-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .user-info {
+            font-size: 14px;
+            color: #666;
         }
     </style>
 </head>
 <body>
-    <h1>Добро пожаловать, {{ username }}!</h1>
-    <p><a href="{{ url_for('logout') }}">Выйти</a></p>
-    
-    <h2>Генератор паролей</h2>
-    <div>
-        <label>Длина пароля: <input type="number" id="length" value="12" min="1" max="50"></label><br>
-        <label><input type="checkbox" id="uppercase" checked> Заглавные буквы</label><br>
-        <label><input type="checkbox" id="numbers" checked> Цифры</label><br>
-        <label><input type="checkbox" id="special" checked> Специальные символы</label><br>
-        <button class="button" onclick="generatePassword()">Сгенерировать пароль</button>
+    <div class="header">
+        <h1>Генератор паролей</h1>
+        <div>
+            <div class="user-info">Пользователь: {{ username }}</div>
+            <a href="{{ url_for('logout') }}" class="logout-btn">Выйти</a>
+        </div>
     </div>
-    <div id="result" style="margin: 10px 0; padding: 10px; background: #e0e0e0;"></div>
 
-    <div class="users-section">
-        
-        
-        {% if all_users %}
-            <p>Найдено пользователей: {{ all_users|length }}</p>
-            {% for user, password in all_users.items() %}
-                <div class="user-item">
-                    <span class="user-login">Логин: {{ user }}</span> | 
-                    <span class="user-password">Пароль: {{ password }}</span>
-                </div>
-            {% endfor %}
-        {% else %}
-            <p style="color: red;">Пользователей не найдено или файл пуст</p>
-        {% endif %}
+    <!-- Генератор паролей -->
+    <div class="generator-card">
+        <h2>Генератор паролей</h2>
+        <div class="password-display" id="passwordDisplay">
+            Нажмите "Сгенерировать" для создания пароля
+        </div>
+
+        <div class="settings-group">
+            <label for="lengthInput">Длина пароля:</label>
+            <input type="number" id="lengthInput" class="length-input" min="4" max="50" value="12">
+        </div>
+
+        <div class="settings-group">
+            <div class="checkbox-group">
+                <input type="checkbox" id="uppercase" checked>
+                <label for="uppercase">Заглавные буквы (A-Z)</label>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="numbers" checked>
+                <label for="numbers">Цифры (0-9)</label>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="special" checked>
+                <label for="special">Специальные символы (!@#$%)</label>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="btn btn-primary" onclick="generatePassword()">Сгенерировать</button>
+            <button class="btn btn-secondary" onclick="copyPassword()">Копировать</button>
+        </div>
+    </div>
+
+    <!-- Просмотр базы данных -->
+    <div class="database-section">
+        <h2>Просмотр базы данных</h2>
+        <button class="btn btn-primary" onclick="viewDatabase()" style="width: auto;">Показать данные базы</button>
+        <div id="databaseContent" class="data-content"></div>
     </div>
 
     <script>
         function generatePassword() {
-            const length = document.getElementById('length').value;
+            const lengthInput = document.getElementById('lengthInput');
+            let length = parseInt(lengthInput.value);
+            
+            // Проверка корректности длины
+            if (isNaN(length) || length < 1) {
+                length = 12;
+                lengthInput.value = 12;
+            } else if (length > 50) {
+                length = 50;
+                lengthInput.value = 50;
+            } else if (length < 4) {
+                length = 4;
+                lengthInput.value = 4;
+            }
+            
             const uppercase = document.getElementById('uppercase').checked;
             const numbers = document.getElementById('numbers').checked;
             const special = document.getElementById('special').checked;
@@ -99,7 +227,7 @@
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    length: parseInt(length),
+                    length: length,
                     uppercase: uppercase,
                     numbers: numbers,
                     special: special
@@ -107,36 +235,79 @@
             })
             .then(response => response.json())
             .then(data => {
-                const resultDiv = document.getElementById('result');
                 if (data.success) {
-                    resultDiv.innerHTML = 
-                        `<p><strong>Сгенерированный пароль:</strong> <span style="font-family: monospace; font-weight: bold;">${data.password}</span></p>`;
+                    document.getElementById('passwordDisplay').textContent = data.password;
                 } else {
-                    resultDiv.innerHTML = 
-                        `<p style="color: red;">Ошибка: ${data.error}</p>`;
+                    alert('Ошибка: ' + data.error);
                 }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Произошла ошибка при генерации пароля');
             });
         }
 
-        function viewFileContent() {
-            fetch('/view_file')
+        function copyPassword() {
+            const password = document.getElementById('passwordDisplay').textContent;
+            if (password && password !== 'Нажмите "Сгенерировать" для создания пароля') {
+                navigator.clipboard.writeText(password).then(() => {
+                    alert('Пароль скопирован в буфер обмена!');
+                });
+            }
+        }
+
+        function viewDatabase() {
+            fetch('/view_database')
                 .then(response => response.json())
                 .then(data => {
-                    const fileContentDiv = document.getElementById('fileContent');
+                    const container = document.getElementById('databaseContent');
                     if (data.success) {
-                        fileContentDiv.textContent = data.content;
-                        fileContentDiv.style.display = 'block';
+                        let html = '';
+                        
+                        // Пользователи
+                        html += '<h3>Пользователи:</h3>';
+                        data.users.forEach(user => {
+                            html += `
+                                <div class="data-item">
+                                    <strong>Логин:</strong> ${user.username}<br>
+                                    <strong>Пароль:</strong> ${user.password}<br>
+                                    <strong>Дата регистрации:</strong> ${new Date(user.created_at).toLocaleString()}
+                                </div>
+                            `;
+                        });
+                        
+                        // История паролей
+                        html += '<h3 style="margin-top: 20px;">История паролей:</h3>';
+                        if (data.password_history.length > 0) {
+                            data.password_history.forEach(history => {
+                                html += `
+                                    <div class="data-item">
+                                        <strong>Пароль:</strong> ${history.generated_password}<br>
+                                        <strong>Пользователь:</strong> ${history.username}<br>
+                                        <strong>Дата создания:</strong> ${new Date(history.created_at).toLocaleString()}
+                                    </div>
+                                `;
+                            });
+                        } else {
+                            html += '<p>История паролей пуста</p>';
+                        }
+                        
+                        container.innerHTML = html;
                     } else {
-                        fileContentDiv.textContent = 'Ошибка: ' + data.error;
-                        fileContentDiv.style.display = 'block';
+                        container.innerHTML = '<p>Ошибка: ' + data.error + '</p>';
                     }
-                })
-                .catch(error => {
-                    const fileContentDiv = document.getElementById('fileContent');
-                    fileContentDiv.textContent = 'Ошибка при загрузке файла: ' + error;
-                    fileContentDiv.style.display = 'block';
                 });
         }
+
+        // Ограничение ввода для числового поля
+        document.getElementById('lengthInput').addEventListener('input', function() {
+            let value = parseInt(this.value);
+            if (isNaN(value) || value < 1) {
+                this.value = 12;
+            } else if (value > 50) {
+                this.value = 50;
+            }
+        });
     </script>
 </body>
 </html>
