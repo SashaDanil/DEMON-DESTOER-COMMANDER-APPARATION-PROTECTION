@@ -35,7 +35,9 @@ python app.ry
 
 Веб-приложение
 -
-<img width="405" height="639" alt="image" src="https://github.com/user-attachments/assets/27d49d63-aa62-4819-8ffe-c76acea72ce4" />
-<img width="387" height="453" alt="image" src="https://github.com/user-attachments/assets/855c3e58-c137-4fd7-89b1-be993a2bb826" />
+<img width="595" height="646" alt="image" src="https://github.com/user-attachments/assets/02a5b386-c10e-4760-a6d6-4ef11d3d4652" />
+<img width="601" height="135" alt="image" src="https://github.com/user-attachments/assets/55fad374-54ef-4071-84b3-1b5c621c7757" />
+
+
 
 
