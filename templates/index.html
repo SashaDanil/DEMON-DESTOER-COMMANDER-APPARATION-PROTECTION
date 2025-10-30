@@ -54,13 +54,20 @@
             font-weight: bold;
         }
         
-        .length-input {
-            width: 80px;
+        .length-input, .website-input {
             padding: 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
             font-size: 16px;
+        }
+        
+        .length-input {
+            width: 80px;
             text-align: center;
+        }
+        
+        .website-input {
+            width: 200px;
         }
         
         .checkbox-group {
@@ -149,6 +156,18 @@
             font-size: 14px;
             color: #666;
         }
+        
+        .history-item {
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 10px;
+            margin-bottom: 8px;
+        }
+        
+        .website-name {
+            font-weight: bold;
+            color: #007bff;
+        }
     </style>
 </head>
 <body>
@@ -157,6 +176,7 @@
         <div>
             <div class="user-info">Пользователь: {{ username }}</div>
             <a href="{{ url_for('logout') }}" class="logout-btn">Выйти</a>
+
         </div>
     </div>
 
@@ -165,6 +185,11 @@
         <h2>Генератор паролей</h2>
         <div class="password-display" id="passwordDisplay">
             Нажмите "Сгенерировать" для создания пароля
+        </div>
+
+        <div class="settings-group">
+            <label for="websiteInput">Сайт/Сервис (опционально):</label>
+            <input type="text" id="websiteInput" class="website-input" placeholder="example.com">
         </div>
 
         <div class="settings-group">
@@ -193,6 +218,13 @@
         </div>
     </div>
 
+    <!-- История пользователя -->
+    <div class="database-section">
+        <h2>Моя история</h2>
+        <button class="btn btn-primary" onclick="viewUserHistory()" style="width: auto;">Показать мою историю</button>
+        <div id="userHistoryContent" class="data-content"></div>
+    </div>
+
     <!-- Просмотр базы данных -->
     <div class="database-section">
         <h2>Просмотр базы данных</h2>
@@ -204,6 +236,7 @@
         function generatePassword() {
             const lengthInput = document.getElementById('lengthInput');
             let length = parseInt(lengthInput.value);
+            const website = document.getElementById('websiteInput').value;
             
             // Проверка корректности длины
             if (isNaN(length) || length < 1) {
@@ -230,7 +263,8 @@
                     length: length,
                     uppercase: uppercase,
                     numbers: numbers,
-                    special: special
+                    special: special,
+                    website: website
                 })
             })
             .then(response => response.json())
@@ -256,6 +290,44 @@
             }
         }
 
+        function viewUserHistory() {
+            fetch('/user_history')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('userHistoryContent');
+                    if (data.success) {
+                        let html = '';
+                        
+                        if (data.history.length > 0) {
+                            data.history.forEach(history => {
+                                const website = history.website || 'Не указан';
+                                const date = new Date(history.created_at).toLocaleString();
+                                const settings = [
+                                    history.use_uppercase ? 'A-Z' : '',
+                                    history.use_numbers ? '0-9' : '',
+                                    history.use_special ? '!@#$%' : ''
+                                ].filter(Boolean).join(', ');
+                                
+                                html += `
+                                    <div class="history-item">
+                                        <div class="website-name">${website}</div>
+                                        <div><strong>Длина:</strong> ${history.length} симв.</div>
+                                        <div><strong>Настройки:</strong> ${settings}</div>
+                                        <div><strong>Дата:</strong> ${date}</div>
+                                    </div>
+                                `;
+                            });
+                        } else {
+                            html = '<p>История паролей пуста</p>';
+                        }
+                        
+                        container.innerHTML = html;
+                    } else {
+                        container.innerHTML = '<p>Ошибка: ' + data.error + '</p>';
+                    }
+                });
+        }
+
         function viewDatabase() {
             fetch('/view_database')
                 .then(response => response.json())
@@ -264,27 +336,25 @@
                     if (data.success) {
                         let html = '';
                         
-                        // Пользователи
-                        html += '<h3>Пользователи:</h3>';
-                        data.users.forEach(user => {
-                            html += `
-                                <div class="data-item">
-                                    <strong>Логин:</strong> ${user.username}<br>
-                                    <strong>Пароль:</strong> ${user.password}<br>
-                                    <strong>Дата регистрации:</strong> ${new Date(user.created_at).toLocaleString()}
-                                </div>
-                            `;
-                        });
-                        
-                        // История паролей
-                        html += '<h3 style="margin-top: 20px;">История паролей:</h3>';
+                        // Только история генераций (без пользователей)
+                        html += '<h3>История генераций:</h3>';
                         if (data.password_history.length > 0) {
                             data.password_history.forEach(history => {
+                                const website = history.website || 'Не указан';
+                                const date = new Date(history.created_at).toLocaleString();
+                                const settings = [
+                                    history.use_uppercase ? 'A-Z' : '',
+                                    history.use_numbers ? '0-9' : '',
+                                    history.use_special ? '!@#$%' : ''
+                                ].filter(Boolean).join(', ');
+                                
                                 html += `
                                     <div class="data-item">
-                                        <strong>Пароль:</strong> ${history.generated_password}<br>
+                                        <strong>Сайт:</strong> ${website}<br>
                                         <strong>Пользователь:</strong> ${history.username}<br>
-                                        <strong>Дата создания:</strong> ${new Date(history.created_at).toLocaleString()}
+                                        <strong>Длина:</strong> ${history.length} симв.<br>
+                                        <strong>Настройки:</strong> ${settings}<br>
+                                        <strong>Дата создания:</strong> ${date}
                                     </div>
                                 `;
                             });
