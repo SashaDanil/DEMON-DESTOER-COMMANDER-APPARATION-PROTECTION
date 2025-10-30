@@ -4,6 +4,7 @@ import string
 import os
 import sqlite3
 from datetime import datetime
+import hashlib
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'
@@ -29,11 +30,12 @@ def init_db():
         )
     ''')
     
-    # Создание таблицы для истории генерации паролей (опционально)
+    # Обновленная таблица для истории генерации паролей
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS password_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER,
+            website TEXT,
             generated_password TEXT,
             length INTEGER,
             use_uppercase BOOLEAN,
@@ -51,8 +53,12 @@ def init_db():
 def get_db_connection():
     """Получение соединения с базой данных"""
     conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row  # Для доступа к колонкам по имени
+    conn.row_factory = sqlite3.Row
     return conn
+
+def hash_password(password):
+    """Хеширование пароля (базовое)"""
+    return hashlib.sha256(password.encode()).hexdigest()
 
 def load_users():
     """Загрузка пользователей из базы данных"""
@@ -79,7 +85,7 @@ def save_user(username, password):
         cursor = conn.cursor()
         cursor.execute(
             'INSERT INTO users (username, password) VALUES (?, ?)',
-            (username, password)
+            (username, hash_password(password))
         )
         conn.commit()
         conn.close()
@@ -91,16 +97,16 @@ def save_user(username, password):
         print(f"Ошибка при сохранении пользователя: {e}")
         return False
 
-def save_password_history(user_id, password, length, use_uppercase, use_numbers, use_special):
+def save_password_history(user_id, website, password, length, use_uppercase, use_numbers, use_special):
     """Сохранение истории генерации паролей"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             '''INSERT INTO password_history 
-               (user_id, generated_password, length, use_uppercase, use_numbers, use_special) 
-               VALUES (?, ?, ?, ?, ?, ?)''',
-            (user_id, password, length, use_uppercase, use_numbers, use_special)
+               (user_id, website, generated_password, length, use_uppercase, use_numbers, use_special) 
+               VALUES (?, ?, ?, ?, ?, ?, ?)''',
+            (user_id, website, password, length, use_uppercase, use_numbers, use_special)
         )
         conn.commit()
         conn.close()
@@ -123,7 +129,7 @@ def get_user_id(username):
         return None
 
 def get_all_users_data():
-    """Получение всех пользователей для отображения"""
+    """Получение всех пользователей для отображения (без паролей)"""
     users = []
     try:
         conn = get_db_connection()
@@ -187,8 +193,9 @@ def login():
             return render_template('login.html', error='Заполните все поля')
         
         users = load_users()
+        hashed_password = hash_password(password)
         
-        if username in users and users[username] == password:
+        if username in users and users[username] == hashed_password:
             session['username'] = username
             return redirect(url_for('index'))
         else:
@@ -243,6 +250,7 @@ def generate():
         use_uppercase = data.get('uppercase', True)
         use_numbers = data.get('numbers', True)
         use_special = data.get('special', True)
+        website = data.get('website', '').strip()
 
         if length < 1:
             length = 1
@@ -254,7 +262,7 @@ def generate():
         # Сохраняем историю генерации
         user_id = get_user_id(session['username'])
         if user_id:
-            save_password_history(user_id, password, length, use_uppercase, use_numbers, use_special)
+            save_password_history(user_id, website, password, length, use_uppercase, use_numbers, use_special)
         
         return jsonify({
             'success': True,
@@ -269,7 +277,7 @@ def generate():
 
 @app.route('/view_database')
 def view_database():
-    """Просмотр содержимого базы данных"""
+    """Просмотр содержимого базы данных (без пользователей)"""
     if 'username' not in session:
         return jsonify({'success': False, 'error': 'Требуется авторизация'})
     
@@ -277,14 +285,10 @@ def view_database():
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Получаем данные пользователей
-        cursor.execute('SELECT * FROM users')
-        users_data = cursor.fetchall()
-        users = [dict(row) for row in users_data]
-        
         # Получаем историю генерации паролей
         cursor.execute('''
-            SELECT ph.*, u.username 
+            SELECT ph.website, ph.length, ph.use_uppercase, ph.use_numbers, ph.use_special, 
+                   ph.created_at, u.username 
             FROM password_history ph 
             JOIN users u ON ph.user_id = u.id 
             ORDER BY ph.created_at DESC
@@ -296,7 +300,6 @@ def view_database():
         
         return jsonify({
             'success': True,
-            'users': users,
             'password_history': history
         })
     
@@ -321,7 +324,7 @@ def user_history():
         cursor = conn.cursor()
         
         cursor.execute('''
-            SELECT generated_password, length, use_uppercase, use_numbers, use_special, created_at
+            SELECT website, length, use_uppercase, use_numbers, use_special, created_at
             FROM password_history 
             WHERE user_id = ? 
             ORDER BY created_at DESC
@@ -348,4 +351,4 @@ with app.app_context():
     init_db()
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host=0.0, port=5000)
