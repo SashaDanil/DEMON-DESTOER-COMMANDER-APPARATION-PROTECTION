@@ -7,7 +7,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 600px;
+            max-width: 800px;
             margin: 0 auto;
             padding: 20px;
             background-color: #f5f5f5;
@@ -24,7 +24,7 @@
             align-items: center;
         }
         
-        .generator-card {
+        .generator-card, .manager-card {
             background: white;
             padding: 30px;
             border-radius: 5px;
@@ -54,11 +54,13 @@
             font-weight: bold;
         }
         
-        .length-input, .website-input {
+        .length-input, .website-input, .username-input, .password-input {
             padding: 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
             font-size: 16px;
+            width: 100%;
+            box-sizing: border-box;
         }
         
         .length-input {
@@ -66,8 +68,8 @@
             text-align: center;
         }
         
-        .website-input {
-            width: 200px;
+        .input-group {
+            margin-bottom: 15px;
         }
         
         .checkbox-group {
@@ -105,6 +107,15 @@
         
         .btn-secondary:hover {
             background: #545b62;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
         }
         
         .logout-btn {
@@ -164,9 +175,40 @@
             margin-bottom: 8px;
         }
         
+        .password-item {
+            background: #f8f9fa;
+            border-left: 4px solid #28a745;
+            padding: 10px;
+            margin-bottom: 8px;
+        }
+        
         .website-name {
             font-weight: bold;
             color: #007bff;
+        }
+        
+        .user-password, .generated-password, .password-text {
+            font-family: monospace;
+            background: #fff3cd;
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid #ffeaa7;
+            font-weight: bold;
+            color: #856404;
+            word-break: break-all;
+        }
+        
+        .manager-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 10px;
+            align-items: end;
+        }
+        
+        @media (max-width: 768px) {
+            .manager-form {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -176,7 +218,6 @@
         <div>
             <div class="user-info">Пользователь: {{ username }}</div>
             <a href="{{ url_for('logout') }}" class="logout-btn">Выйти</a>
-
         </div>
     </div>
 
@@ -185,11 +226,6 @@
         <h2>Генератор паролей</h2>
         <div class="password-display" id="passwordDisplay">
             Нажмите "Сгенерировать" для создания пароля
-        </div>
-
-        <div class="settings-group">
-            <label for="websiteInput">Сайт/Сервис (опционально):</label>
-            <input type="text" id="websiteInput" class="website-input" placeholder="example.com">
         </div>
 
         <div class="settings-group">
@@ -218,25 +254,49 @@
         </div>
     </div>
 
-    <!-- История пользователя -->
-    <div class="database-section">
-        <h2>Моя история</h2>
-        <button class="btn btn-primary" onclick="viewUserHistory()" style="width: auto;">Показать мою историю</button>
-        <div id="userHistoryContent" class="data-content"></div>
+    <!-- Менеджер паролей -->
+    <div class="manager-card">
+        <h2>Менеджер паролей</h2>
+        
+        <div class="manager-form">
+            <div class="input-group">
+                <label for="managerWebsite">Сайт:</label>
+                <input type="text" id="managerWebsite" class="website-input" placeholder="" required>
+            </div>
+            
+            <div class="input-group">
+                <label for="managerUsername">Логин:</label>
+                <input type="text" id="managerUsername" class="username-input" placeholder="" required>
+            </div>
+            
+            <div class="input-group">
+                <label for="managerPassword">Пароль:</label>
+                <input type="text" id="managerPassword" class="password-input" placeholder="" required>
+            </div>
+            
+            <div class="input-group">
+                <button class="btn btn-success" onclick="savePassword()" style="height: 42px;">Сохранить</button>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="btn btn-primary" onclick="loadPasswords()" style="width: auto;">Показать мои пароли</button>
+        </div>
+
+        <div id="passwordsContent" class="data-content" style="display: none;"></div>
     </div>
 
-    <!-- Просмотр базы данных -->
+    <!-- История пользователя -->
     <div class="database-section">
-        <h2>Просмотр базы данных</h2>
-        <button class="btn btn-primary" onclick="viewDatabase()" style="width: auto;">Показать данные базы</button>
-        <div id="databaseContent" class="data-content"></div>
+        <h2>Моя история генераций</h2>
+        <button class="btn btn-primary" onclick="viewUserHistory()" style="width: auto;">Показать мою историю</button>
+        <div id="userHistoryContent" class="data-content"></div>
     </div>
 
     <script>
         function generatePassword() {
             const lengthInput = document.getElementById('lengthInput');
             let length = parseInt(lengthInput.value);
-            const website = document.getElementById('websiteInput').value;
             
             // Проверка корректности длины
             if (isNaN(length) || length < 1) {
@@ -264,13 +324,15 @@
                     uppercase: uppercase,
                     numbers: numbers,
                     special: special,
-                    website: website
+                    website: ''  // Пустая строка вместо сайта
                 })
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
                     document.getElementById('passwordDisplay').textContent = data.password;
+                    // Автозаполнение поля пароля в менеджере
+                    document.getElementById('managerPassword').value = data.password;
                 } else {
                     alert('Ошибка: ' + data.error);
                 }
@@ -290,6 +352,80 @@
             }
         }
 
+        function savePassword() {
+            const website = document.getElementById('managerWebsite').value.trim();
+            const username = document.getElementById('managerUsername').value.trim();
+            const password = document.getElementById('managerPassword').value.trim();
+
+            if (!website || !username || !password) {
+                alert('Заполните все поля!');
+                return;
+            }
+
+            fetch('/save_password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    website: website,
+                    username: username,
+                    password: password
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    // Очистка полей после успешного сохранения
+                    document.getElementById('managerWebsite').value = '';
+                    document.getElementById('managerUsername').value = '';
+                    document.getElementById('managerPassword').value = '';
+                    // Обновление списка паролей
+                    loadPasswords();
+                } else {
+                    alert('Ошибка: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Произошла ошибка при сохранении пароля');
+            });
+        }
+
+        function loadPasswords() {
+            fetch('/get_passwords')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('passwordsContent');
+                    container.style.display = 'block';
+                    
+                    if (data.success) {
+                        let html = '';
+                        
+                        if (data.passwords.length > 0) {
+                            data.passwords.forEach(item => {
+                                const date = new Date(item.created_at).toLocaleString();
+                                html += `
+                                    <div class="password-item">
+                                        <div class="website-name">${item.website}</div>
+                                        <div><strong>Логин:</strong> ${item.username}</div>
+                                        <div><strong>Пароль:</strong> <span class="password-text">${item.password}</span></div>
+                                        <div><strong>Дата сохранения:</strong> ${date}</div>
+                                    </div>
+                                `;
+                            });
+                        } else {
+                            html = '<p>Сохраненных паролей нет</p>';
+                        }
+                        
+                        container.innerHTML = html;
+                    } else {
+                        container.innerHTML = '<p>Ошибка: ' + data.error + '</p>';
+                    }
+                });
+        }
+
         function viewUserHistory() {
             fetch('/user_history')
                 .then(response => response.json())
@@ -300,7 +436,7 @@
                         
                         if (data.history.length > 0) {
                             data.history.forEach(history => {
-                                const website = history.website || 'Не указан';
+                                const password = history.generated_password || 'Нет данных';
                                 const date = new Date(history.created_at).toLocaleString();
                                 const settings = [
                                     history.use_uppercase ? 'A-Z' : '',
@@ -310,7 +446,7 @@
                                 
                                 html += `
                                     <div class="history-item">
-                                        <div class="website-name">${website}</div>
+                                        <div><strong>Пароль:</strong> <span class="password-text">${password}</span></div>
                                         <div><strong>Длина:</strong> ${history.length} симв.</div>
                                         <div><strong>Настройки:</strong> ${settings}</div>
                                         <div><strong>Дата:</strong> ${date}</div>
@@ -319,47 +455,6 @@
                             });
                         } else {
                             html = '<p>История паролей пуста</p>';
-                        }
-                        
-                        container.innerHTML = html;
-                    } else {
-                        container.innerHTML = '<p>Ошибка: ' + data.error + '</p>';
-                    }
-                });
-        }
-
-        function viewDatabase() {
-            fetch('/view_database')
-                .then(response => response.json())
-                .then(data => {
-                    const container = document.getElementById('databaseContent');
-                    if (data.success) {
-                        let html = '';
-                        
-                        // Только история генераций (без пользователей)
-                        html += '<h3>История генераций:</h3>';
-                        if (data.password_history.length > 0) {
-                            data.password_history.forEach(history => {
-                                const website = history.website || 'Не указан';
-                                const date = new Date(history.created_at).toLocaleString();
-                                const settings = [
-                                    history.use_uppercase ? 'A-Z' : '',
-                                    history.use_numbers ? '0-9' : '',
-                                    history.use_special ? '!@#$%' : ''
-                                ].filter(Boolean).join(', ');
-                                
-                                html += `
-                                    <div class="data-item">
-                                        <strong>Сайт:</strong> ${website}<br>
-                                        <strong>Пользователь:</strong> ${history.username}<br>
-                                        <strong>Длина:</strong> ${history.length} симв.<br>
-                                        <strong>Настройки:</strong> ${settings}<br>
-                                        <strong>Дата создания:</strong> ${date}
-                                    </div>
-                                `;
-                            });
-                        } else {
-                            html += '<p>История паролей пуста</p>';
                         }
                         
                         container.innerHTML = html;
