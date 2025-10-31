@@ -46,6 +46,19 @@ def init_db():
         )
     ''')
     
+    # Новая таблица для менеджера паролей
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS password_manager (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            website TEXT NOT NULL,
+            username TEXT NOT NULL,
+            password TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
+    
     conn.commit()
     conn.close()
     print("База данных инициализирована")
@@ -57,8 +70,27 @@ def get_db_connection():
     return conn
 
 def hash_password(password):
-    """Хеширование пароля (базовое)"""
-    return hashlib.sha256(password.encode()).hexdigest()
+    """Функция хеширования пароля (теперь возвращает пароль в открытом виде)"""
+    return password  # Просто возвращаем пароль без хеширования
+
+def save_user(username, password):
+    """Сохранение пользователя в базу данных"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            'INSERT INTO users (username, password) VALUES (?, ?)',
+            (username, password)  # Сохраняем пароль в открытом виде
+        )
+        conn.commit()
+        conn.close()
+        return True
+    except sqlite3.IntegrityError:
+        print("Пользователь с таким именем уже существует")
+        return False
+    except Exception as e:
+        print(f"Ошибка при сохранении пользователя: {e}")
+        return False
 
 def load_users():
     """Загрузка пользователей из базы данных"""
@@ -70,32 +102,13 @@ def load_users():
         rows = cursor.fetchall()
         
         for row in rows:
-            users[row['username']] = row['password']
+            users[row['username']] = row['password']  # Пароль уже в открытом виде
         
         conn.close()
     except Exception as e:
         print(f"Ошибка при загрузке пользователей: {e}")
     
     return users
-
-def save_user(username, password):
-    """Сохранение пользователя в базу данных"""
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute(
-            'INSERT INTO users (username, password) VALUES (?, ?)',
-            (username, hash_password(password))
-        )
-        conn.commit()
-        conn.close()
-        return True
-    except sqlite3.IntegrityError:
-        print("Пользователь с таким именем уже существует")
-        return False
-    except Exception as e:
-        print(f"Ошибка при сохранении пользователя: {e}")
-        return False
 
 def save_password_history(user_id, website, password, length, use_uppercase, use_numbers, use_special):
     """Сохранение истории генерации паролей"""
@@ -113,6 +126,24 @@ def save_password_history(user_id, website, password, length, use_uppercase, use
         return True
     except Exception as e:
         print(f"Ошибка при сохранении истории: {e}")
+        return False
+
+def save_password_manager(user_id, website, username, password):
+    """Сохранение данных в менеджер паролей"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            '''INSERT INTO password_manager 
+               (user_id, website, username, password) 
+               VALUES (?, ?, ?, ?)''',
+            (user_id, website, username, password)
+        )
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Ошибка при сохранении в менеджер паролей: {e}")
         return False
 
 def get_user_id(username):
@@ -193,9 +224,9 @@ def login():
             return render_template('login.html', error='Заполните все поля')
         
         users = load_users()
-        hashed_password = hash_password(password)
         
-        if username in users and users[username] == hashed_password:
+        # Сравниваем пароли в открытом виде
+        if username in users and users[username] == password:
             session['username'] = username
             return redirect(url_for('index'))
         else:
@@ -275,9 +306,83 @@ def generate():
             'error': 'Произошла ошибка'
         })
 
+@app.route('/save_password', methods=['POST'])
+def save_password():
+    """Сохранение данных в менеджер паролей"""
+    if 'username' not in session:
+        return jsonify({'success': False, 'error': 'Требуется авторизация'})
+    
+    try:
+        data = request.get_json()
+        website = data.get('website', '').strip()
+        username = data.get('username', '').strip()
+        password = data.get('password', '').strip()
+
+        if not website or not username or not password:
+            return jsonify({'success': False, 'error': 'Заполните все поля'})
+
+        user_id = get_user_id(session['username'])
+        if not user_id:
+            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+        
+        if save_password_manager(user_id, website, username, password):
+            return jsonify({'success': True, 'message': 'Пароль успешно сохранен'})
+        else:
+            return jsonify({'success': False, 'error': 'Ошибка при сохранении'})
+    
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Произошла ошибка: {e}'
+        })
+
+@app.route('/get_passwords')
+def get_passwords():
+    """Получение сохраненных паролей текущего пользователя"""
+    if 'username' not in session:
+        return jsonify({'success': False, 'error': 'Требуется авторизация'})
+    
+    try:
+        user_id = get_user_id(session['username'])
+        if not user_id:
+            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT website, username, password, created_at
+            FROM password_manager 
+            WHERE user_id = ? 
+            ORDER BY created_at DESC
+        ''', (user_id,))
+        
+        passwords_data = cursor.fetchall()
+        passwords = []
+        for row in passwords_data:
+            passwords.append({
+                'website': row['website'],
+                'username': row['username'],
+                'password': row['password'],
+                'created_at': row['created_at']
+            })
+        
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'passwords': passwords
+        })
+    
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Ошибка при получении паролей: {e}'
+        })
+
 @app.route('/view_database')
 def view_database():
-    """Просмотр содержимого базы данных (без пользователей)"""
+    """Просмотр содержимого базы данных (с пользователями и паролями в открытом виде)"""
     if 'username' not in session:
         return jsonify({'success': False, 'error': 'Требуется авторизация'})
     
@@ -285,22 +390,23 @@ def view_database():
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Получаем историю генерации паролей
-        cursor.execute('''
-            SELECT ph.website, ph.length, ph.use_uppercase, ph.use_numbers, ph.use_special, 
-                   ph.created_at, u.username 
-            FROM password_history ph 
-            JOIN users u ON ph.user_id = u.id 
-            ORDER BY ph.created_at DESC
-        ''')
-        history_data = cursor.fetchall()
-        history = [dict(row) for row in history_data]
+        # Получаем всех пользователей
+        cursor.execute('SELECT id, username, password, created_at FROM users ORDER BY created_at DESC')
+        users_data = cursor.fetchall()
+        users = []
+        for row in users_data:
+            users.append({
+                'id': row['id'],
+                'username': row['username'],
+                'password': row['password'],  # Пароль в открытом виде
+                'created_at': row['created_at']
+            })
         
         conn.close()
         
         return jsonify({
             'success': True,
-            'password_history': history
+            'users': users
         })
     
     except Exception as e:
@@ -324,7 +430,7 @@ def user_history():
         cursor = conn.cursor()
         
         cursor.execute('''
-            SELECT website, length, use_uppercase, use_numbers, use_special, created_at
+            SELECT website, generated_password, length, use_uppercase, use_numbers, use_special, created_at
             FROM password_history 
             WHERE user_id = ? 
             ORDER BY created_at DESC
@@ -332,7 +438,18 @@ def user_history():
         ''', (user_id,))
         
         history_data = cursor.fetchall()
-        history = [dict(row) for row in history_data]
+        history = []
+        for row in history_data:
+            history.append({
+                'website': row['website'],
+                'generated_password': row['generated_password'],
+                'length': row['length'],
+                'use_uppercase': row['use_uppercase'],
+                'use_numbers': row['use_numbers'],
+                'use_special': row['use_special'],
+                'created_at': row['created_at']
+            })
+        
         conn.close()
         
         return jsonify({
@@ -351,4 +468,4 @@ with app.app_context():
     init_db()
 
 if __name__ == '__main__':
-    app.run(debug=True, host=0.0, port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000)
